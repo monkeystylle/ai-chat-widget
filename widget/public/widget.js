@@ -129,6 +129,7 @@
     .name { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
     .bubble { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14.5px; line-height: 1.6; }
     .row.bot .bubble { color: #3f3f46; }
+    .bubble a { color: var(--ink); font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }
     .row.user .bubble { max-width: 80%; padding: 9px 14px; line-height: 1.5; border-radius: 18px; border-bottom-right-radius: 6px; background: #f1f5f9; color: var(--ink); }
 
     /* Error card */
@@ -331,6 +332,54 @@
     send.disabled = busy || isOffline();
   }
 
+  // Puts text in a bubble and turns links into real, clickable <a> tags.
+  // Handles [label](https://...) and bare https://... URLs. Everything is
+  // built with text nodes and createElement (never innerHTML), and only
+  // http/https links match, so a reply can't inject HTML or javascript: links.
+  const LINK_RE =
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>"')\]]+)/g;
+
+  function renderText(el, text) {
+    el.textContent = '';
+    let last = 0;
+    let match;
+    LINK_RE.lastIndex = 0;
+
+    while ((match = LINK_RE.exec(text))) {
+      if (match.index > last) {
+        el.appendChild(document.createTextNode(text.slice(last, match.index)));
+      }
+
+      let url = match[2] || match[3];
+      let label = match[1] || url;
+      let trailing = '';
+
+      // A bare URL at the end of a sentence: keep the "." out of the link.
+      if (!match[2]) {
+        const punct = url.match(/[.,!?;:]+$/);
+        if (punct) {
+          trailing = punct[0];
+          url = url.slice(0, -trailing.length);
+          label = url;
+        }
+      }
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.textContent = label;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      el.appendChild(a);
+      if (trailing) el.appendChild(document.createTextNode(trailing));
+
+      last = LINK_RE.lastIndex;
+    }
+
+    if (last < text.length) {
+      el.appendChild(document.createTextNode(text.slice(last)));
+    }
+  }
+
   // Adds a bubble. Pass text = null to show the typing dots instead.
   // animate = false is used when restoring saved messages, so they don't all slide in.
   function addRow(role, text, animate = true) {
@@ -349,8 +398,8 @@
       bubble.innerHTML =
         '<span class="typing" aria-label="Assistant is typing"><span></span><span></span><span></span></span>';
     } else {
-      // textContent (not innerHTML) so any HTML in a message shows as plain text and can't run.
-      bubble.textContent = text;
+      // Text nodes + <a> tags only (no innerHTML), so HTML in a message can't run.
+      renderText(bubble, text);
     }
 
     msgs.appendChild(row);
