@@ -4,7 +4,6 @@
 
   // ---------- Settings (change these per site) ----------
   const CONFIG = {
-    // Local API for testing. Swap to the deployed Worker URL after
     apiUrl: 'https://ai-chat-widget-api.monkeystylle.workers.dev/chat',
     title: 'Joseph Brummel',
     tag: 'AI assistant',
