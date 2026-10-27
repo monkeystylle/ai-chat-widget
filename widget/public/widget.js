@@ -67,7 +67,7 @@
       color: var(--ink);
       -webkit-font-smoothing: antialiased;
     }
-    button { font: inherit; }
+    button { font: inherit; margin: 0; padding: 0; -webkit-appearance: none; appearance: none; }
     button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
     /* Launcher: white circle + thin border + shadow, visible on dark and white pages */
